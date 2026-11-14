@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alluvial-mcp"
+version = "1.0.0"
+description = "Alluvial Mining Operations Platform (AMOP) - core engines, MCP servers, feasibility and cost-tracking modules"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+include = ["alluvial_mcp*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
