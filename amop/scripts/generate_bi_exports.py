@@ -34,7 +34,7 @@ def _pit_grades_rows() -> list[dict]:
     import sys
     sys.path.insert(0, str(REPO_ROOT))
     from alluvial_mcp.core.grade import build_pit_composite
-    from alluvial_mcp.core.workbook_loader import load_panning_log
+    from alluvial_mcp.io.workbooks import load_panning_log
 
     log = load_panning_log()
     rows = []
@@ -54,7 +54,7 @@ def _vouchers_rows() -> list[dict]:
     import sys
     sys.path.insert(0, str(REPO_ROOT))
     from alluvial_mcp.core.cost_tracking import summarize_vouchers
-    from alluvial_mcp.core.workbook_loader import load_campaign_vouchers
+    from alluvial_mcp.io.workbooks import load_campaign_vouchers
 
     vouchers = load_campaign_vouchers()
     if not vouchers:
@@ -71,7 +71,7 @@ def _budget_rows() -> list[dict]:
     import sys
     sys.path.insert(0, str(REPO_ROOT))
     from alluvial_mcp.core.cost_tracking import evaluate_budget_line
-    from alluvial_mcp.core.workbook_loader import load_campaign_budget
+    from alluvial_mcp.io.workbooks import load_campaign_budget
 
     lines = load_campaign_budget()
     return [
