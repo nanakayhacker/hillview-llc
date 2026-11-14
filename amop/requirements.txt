@@ -1,0 +1,30 @@
+# AMOP — Alluvial Mining Operations Platform
+# This file is the corrected, Windows-installable dependency set.
+#
+# DATA_ISSUE (engineering, not project data): the original handoff spec
+# (docs/AMOP_MCP_SPEC.md §8.3) lists "turboswarm", "ORKit" and "OTTools" as
+# dependencies. These are not published, installable packages. They have
+# been substituted below with working equivalents (see README.md "Engineering
+# corrections to the handoff spec") rather than silently assumed away:
+#   - VAM optimality verification (MODI/stepping-stone) -> scipy.optimize.linprog
+#   - PSO / GA stay as specified (pyswarms, deap) -- both are real, pure-pip,
+#     no-compiler packages and install cleanly on Windows.
+# Heavy GIS/DB stack (geopandas, shapely, pyproj, geoalchemy2, duckdb,
+# sqlalchemy, ortools, redis) is dropped: pit/stockpile geometry here is
+# planar Euclidean survey coordinates, not a GIS problem, and a local
+# SQLite file covers the audit trail without a server dependency.
+
+pydantic>=2.7,<3
+pandas>=2.2,<3
+numpy>=1.26,<2.3
+scipy>=1.13,<2
+openpyxl>=3.1,<4
+pyswarms>=1.3.0,<2
+deap>=1.4,<2
+streamlit>=1.50,<2
+plotly>=5.22,<6
+python-dotenv>=1.0,<2
+loguru>=0.7,<1
+fastmcp>=2.0,<3
+pytest>=8.0,<9
+xlsxwriter>=3.2,<4

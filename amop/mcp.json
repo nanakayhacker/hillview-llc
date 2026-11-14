@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "alluvial-finance": { "command": "python", "args": ["-m", "alluvial_mcp.finance_server"] },
+    "alluvial-geospatial": { "command": "python", "args": ["-m", "alluvial_mcp.geospatial_server"] },
+    "alluvial-plant": { "command": "python", "args": ["-m", "alluvial_mcp.plant_server"] },
+    "alluvial-adjudication": { "command": "python", "args": ["-m", "alluvial_mcp.adjudication_server"] },
+    "alluvial-feasibility": { "command": "python", "args": ["-m", "alluvial_mcp.feasibility_server"] }
+  }
+}
