@@ -415,10 +415,6 @@ def build_pit_composite(
     ore_horizons_input = [h for h in horizons if h.pit_id == pit_id and h.min_zone == "ORE"]
 
     data_issues = []
-    for h, r in zip(ore_horizons_input, [x for x in results]):
-        if abs((h.to_m - h.from_m)) < 1e-9:
-            continue
-
     total_ore_thickness = sum(h.to_m - h.from_m for h in ore_horizons_input)
     panned_results = [r for r in results if r.panned]
     panned_ore_thickness = sum(r.thickness_m for r in panned_results)
@@ -447,13 +443,6 @@ def build_pit_composite(
         klass = "ABOVE CUT-OFF"
     else:
         klass = "BELOW CUT-OFF"
-
-    for h in ore_horizons_input:
-        if abs((h.to_m - h.from_m) - 0) < 1e-9:
-            continue
-    # DATA-01 style check: caller-supplied INT column (if tracked upstream)
-    # is validated in the workbook loader, not here (grade engine takes
-    # From/To directly and does not depend on a separately-entered INT cell).
 
     return CompositeGradeResult(
         pit_id=pit_id, panned_ore_thickness_m=panned_ore_thickness,

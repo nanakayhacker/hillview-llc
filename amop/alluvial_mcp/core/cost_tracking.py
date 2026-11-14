@@ -54,6 +54,7 @@ COST_CODE_TAXONOMY: tuple[CostCategory, ...] = (
     CostCategory("1060", "EXPLORATION", "Employee contractual agreements (salary/payroll contracts)"),
     CostCategory("1070", "EXPLORATION", "Equipment acquisition for prospecting (pitting, panning, survey gear)"),
     CostCategory("1080", "EXPLORATION", "Mineral title acquisition and licensing (claim/permit fees, legal)"),
+    CostCategory("1090", "EXPLORATION", "Laboratory, assay and QAQC"),
     # MINING_OPERATIONS
     CostCategory("2000", "MINING_OPERATIONS", "Haulage (pit to stockpile/plant transport)"),
     CostCategory("2010", "MINING_OPERATIONS", "Excavation (pit digging, overburden removal)"),
@@ -88,6 +89,12 @@ COST_CODE_TAXONOMY: tuple[CostCategory, ...] = (
     CostCategory("5010", "HSE_ADMIN", "Kitchen (catering, feeding, mess hall)"),
     CostCategory("5020", "HSE_ADMIN", "HR (recruitment, welfare, community relations)"),
     CostCategory("5030", "HSE_ADMIN", "Accounting (finance, audit, statutory filings)"),
+    CostCategory("5040", "HSE_ADMIN", "Insurance"),
+    CostCategory("5050", "HSE_ADMIN", "Taxes and statutory charges (non-recoverable)"),
+    CostCategory("5060", "HSE_ADMIN", "Data, software and information security"),
+    CostCategory("5070", "HSE_ADMIN", "Studies, reporting and project management"),
+    CostCategory("5080", "HSE_ADMIN", "Environmental management and rehabilitation"),
+    CostCategory("5090", "HSE_ADMIN", "Security and community relations"),
     # CONTINGENCY
     CostCategory("9000", "CONTINGENCY", "Contingency reserve"),
 )
@@ -115,21 +122,50 @@ CAMPAIGN_PHASES: tuple[tuple[str, str], ...] = (
     ("P8", "Operate and optimise"),
 )
 
-TRANCHE_RELEASE_CONDITIONS: tuple[tuple[str, str], ...] = (
-    ("T0", "Budget baseline approved"),
-    ("T1", "Gate A passed"),
-    ("T2", "Gate B passed"),
-    ("T3", "Gate C passed"),
+# (tranche, release condition, key looked up in `gates_passed`)
+TRANCHE_RELEASE_CONDITIONS: tuple[tuple[str, str, str], ...] = (
+    ("T0", "Budget baseline approved", "T0"),
+    ("T1", "Gate A passed", "A"),
+    ("T2", "Gate B passed", "B"),
+    ("T3", "Gate C passed", "C"),
 )
 
 
 def evaluate_tranche_release(gates_passed: dict[str, bool]) -> list[dict]:
+    """gates_passed keys: "T0" (baseline approved), "A", "B", "C". A tranche is
+    released only when its own gate and every earlier one has passed."""
     out = []
-    for tranche_id, condition in TRANCHE_RELEASE_CONDITIONS:
-        gate_name = condition.split()[-2] if "Gate" in condition else None  # "A"/"B"/"C"
-        released = gates_passed.get(tranche_id, False) if tranche_id == "T0" else gates_passed.get(gate_name or tranche_id, False)
-        out.append({"tranche": tranche_id, "condition": condition, "released": released})
+    all_earlier_passed = True
+    for tranche_id, condition, gate_key in TRANCHE_RELEASE_CONDITIONS:
+        all_earlier_passed = all_earlier_passed and bool(gates_passed.get(gate_key, False))
+        out.append({"tranche": tranche_id, "condition": condition, "released": all_earlier_passed})
     return out
+
+
+# Alluvial_Campaign_Control_Workbook_Guyana.xlsx!Budget uses its own 100-800
+# codes; this is the one place they are translated to this taxonomy.
+LEGACY_CAMPAIGN_CODE_MAP: dict[str, str] = {
+    "100": "1050",  # Legal, permits and registration
+    "110": "5040",  # Insurance
+    "120": "5050",  # Taxes and statutory (non-recoverable)
+    "200": "1040",  # Technical personnel and field crew
+    "210": "5090",  # Camp, welfare, security and community
+    "300": "1000",  # Mobilisation and logistics
+    "310": "1070",  # Field equipment and consumables
+    "320": "2010",  # Excavation, haulage and hire
+    "400": "1090",  # Laboratory, assay and QAQC
+    "500": "5060",  # Data, software and security
+    "600": "3020",  # Plant components and fabrication
+    "610": "3010",  # Civil works
+    "620": "3030",  # Power and water systems
+    "700": "9000",  # Contingency
+    "800": "5070",  # Studies, reporting and project management
+}
+
+
+def map_legacy_campaign_code(legacy_code: str) -> str | None:
+    """None when the legacy code is unknown -- callers must flag it, not guess."""
+    return LEGACY_CAMPAIGN_CODE_MAP.get(str(legacy_code).strip())
 
 
 # ---------------------------------------------------------------------------

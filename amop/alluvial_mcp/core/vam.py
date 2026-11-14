@@ -268,11 +268,11 @@ def solve_vam(
     )
     row_sums = [sum(r) for r in real_allocation]
     col_sums = [sum(real_allocation[i][j] for i in range(n_src)) for j in range(n_dst)]
-    feasible = all(abs(row_sums[i] - min(supply[i], supply[i])) <= 1e-6 or True for i in range(n_src))
+    feasible = adjudicate_vam_solution(real_allocation, supply, demand)["verdict"] == "VAM_ACCEPTED"
 
     return VAMResult(
         allocation=real_allocation, total_cost=total_cost, iterations=iterations,
-        feasible=True, row_sums=row_sums, column_sums=col_sums,
+        feasible=feasible, row_sums=row_sums, column_sums=col_sums,
         balance_note=balance_note, source_ids=source_ids, destination_ids=destination_ids,
     )
 
@@ -308,20 +308,29 @@ def compute_vam_savings(vam_cost: float, naive_cost: float) -> dict:
 
 
 def adjudicate_vam_solution(
-    allocation: list[list[float]], supply: list[float], demand: list[float]
+    allocation: list[list[float]], supply: list[float], demand: list[float],
+    vam_cost: float | None = None, naive_cost: float | None = None,
 ) -> dict:
+    """R-2.2. No source ships more than its supply, no destination receives
+    more than its demand, the smaller of total supply/demand is fully placed,
+    nothing is negative and (when both costs are given) VAM is no dearer than
+    the naive baseline. Returns the failing constraint names."""
+    tol = 1e-6
     row_sums = [sum(r) for r in allocation]
     col_sums = [sum(allocation[i][j] for i in range(len(allocation))) for j in range(len(allocation[0]))]
-    row_ok = all(abs(row_sums[i] - supply[i]) <= 1e-6 for i in range(len(supply)))
-    col_ok = all(abs(col_sums[j] - demand[j]) <= 1e-6 for j in range(len(demand))) if sum(demand) <= sum(supply) + 1e-6 else True
-    nonneg_ok = all(v >= -1e-9 for row in allocation for v in row)
-    verdict = "VAM_ACCEPTED" if (row_ok and nonneg_ok) else "VAM_REJECTED"
     failing = []
-    if not row_ok:
-        failing.append("row_sums_mismatch")
-    if not nonneg_ok:
+    if any(row_sums[i] > supply[i] + tol for i in range(len(supply))):
+        failing.append("supply_exceeded")
+    if any(col_sums[j] > demand[j] + tol for j in range(len(demand))):
+        failing.append("demand_exceeded")
+    if abs(sum(row_sums) - min(sum(supply), sum(demand))) > tol:
+        failing.append("volume_not_fully_allocated")
+    if any(v < -1e-9 for row in allocation for v in row):
         failing.append("negative_allocation")
-    return {"verdict": verdict, "row_sums": row_sums, "column_sums": col_sums, "failing_constraints": failing}
+    if vam_cost is not None and naive_cost is not None and vam_cost > naive_cost + tol:
+        failing.append("vam_dearer_than_naive")
+    return {"verdict": "VAM_REJECTED" if failing else "VAM_ACCEPTED", "row_sums": row_sums,
+            "column_sums": col_sums, "failing_constraints": failing}
 
 
 def verify_vam_optimality(allocation: list[list[float]], cost_matrix: list[list[float]],

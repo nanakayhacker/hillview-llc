@@ -36,16 +36,22 @@ class RuleResult:
 # ---------------------------------------------------------------------------
 
 
-def adjudicate_blend_against_grade_credibility(pit_shares_and_z: dict[str, tuple[float, float]]) -> RuleResult:
-    """A pit may contribute > 30% of blend volume only if Z >= 0.6; else cap at 20%."""
+def adjudicate_blend_against_grade_credibility(
+    pit_shares_and_z: dict[str, tuple[float, float | None]]
+) -> RuleResult:
+    """A pit may contribute > 30% of blend volume only if Z >= 0.6; else cap at 20%.
+
+    Z is None when the pit has no grade-credibility record at all. That is not
+    evidence of credibility, so the 20% cap applies and the gap is named."""
     violations = []
     adjusted_shares = {}
     for pit_id, (share, z) in pit_shares_and_z.items():
-        cap = 0.30 if z >= 0.6 else 0.20
+        cap = 0.30 if (z is not None and z >= 0.6) else 0.20
         adjusted_shares[f"{pit_id}_share"] = share
         adjusted_shares[f"{pit_id}_Z"] = z
         if share > cap:
-            violations.append(f"{pit_id}: share {share:.3f} exceeds cap {cap:.2f} at Z={z:.3f}")
+            z_text = "no credibility record" if z is None else f"Z={z:.3f}"
+            violations.append(f"{pit_id}: share {share:.3f} exceeds cap {cap:.2f} ({z_text})")
     passed = not violations
     return RuleResult(
         rule_id="R-1.1", name="blend_grade_credibility", passed=passed,
